@@ -1,0 +1,23 @@
+#!/bin/sh
+# Requires inotify-tools from https://github.com/rvoicilas/inotify-tools/wiki to use inotifywait
+
+if [ $# -ne 1 ]; then
+	echo "Usage: $(basename $0) <Raw Root Folder>"
+	exit
+fi
+
+# Example Raw Root Folder: /data2/raw/runs/roger
+RAW_ROOT_FOLDER=$(readlink -f $1)
+
+out_log="$HOME/logs$(basename $0).out"
+
+echo "Monitoring $RAW_ROOT_FOLDER for new directories" >> $out_log
+
+# Run inotifywait to monitor creation of files / directories in the root RAW DIRECTORY
+while RES=$(/home/pipeline/usr/bin/bin/inotifywait -e create -q --format '%w%f' $RAW_ROOT_FOLDER); do
+	
+	# If a folder was created, then initiate a watch for RTAComplete.txt
+	if [ -d "$RES" ]; then
+		watch.rta.completes $RES & >> $out_log
+	fi 
+done

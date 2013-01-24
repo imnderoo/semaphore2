@@ -1,0 +1,40 @@
+#!/bin/sh
+
+#Include option to specify outfolder?
+
+if [ $# -ne 1 ]; then
+	echo "This script runs the necessary tools which converts all the Basecall (BCL) files from the Raw Run folder into FASTQ files."
+	echo "The FASTQ files are stored in their respective Project and Sample folders as defined by the SampleSheet from the Raw Run folder."
+	echo "--------------------------------------------------------------------------------------------------------------------------"	
+	echo "Usage: $(basename $0) <Raw Run Folder>" 
+	exit
+fi
+
+OUT_FOLDER="/data2/analysis/$RUN_FOLDER_ID/Unaligned"
+mkdir -p "$OUT_FOLDER"
+
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+#Example raw run folder: /data2/raw/runs/roger/$RUN_FOLDER_ID
+RAW_RUN_FOLDER=$(readlink -f "$1")
+BCL_FOLDER=$RAW_RUN_FOLDER/Data/Intensities/BaseCalls
+RUN_SAMPLE_SHEET=$(ls $RAW_RUN_FOLDER/SampleSheet*.csv)
+
+out_log_dir="$HOME/logs/$(basename $0)"
+mkdir -p "$out_log_dir"
+OUT_LOG_FILE="$out_log_dir/$(basename $RAW_RUN_FOLDER).o"
+
+#Main Script
+echo "Creating Makefiles to convert BCL into FASTQ files..." > $OUT_LOG_FILE
+$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $RUN_SAMPLE_SHEET --force >> $OUT_LOG_FILE
+
+echo "Building FASTQ files..." >> $OUT_LOG_FILE
+make -C $OUT_FOLDER >> $OUT_LOG_FILE
+
+echo "Conversion of BCL into FASTQ Complete." >> $OUT_LOG_FILE
+echo "Submitting FASTQC jobs to Sun Grid Engine." >> $OUT_LOG_FILE
+run.fastqc.sge $OUT_FOLDER
+
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Script $(basename %0) started at $START_TIME and ended at $END_TIME." >> $OUT_LOG_FILE

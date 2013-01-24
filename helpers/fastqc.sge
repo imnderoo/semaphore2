@@ -1,0 +1,33 @@
+#!/bin/sh
+
+if [ $# -ne 2 ]; then
+        echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
+        echo "--------------------------------------------------------------------------------------------------------------------------"
+        echo "Usage: $(basename $0) <fastqc.gz file> <out directory>"
+        exit
+fi
+
+mkdir -p $HOME/logs/fastqc/
+mkdir -p $HOME/logs/errors/
+
+#$ -S /bin/sh
+#$ -m ae
+#$ -M sge_test
+#$ -o $HOME/logs/fastqc/$JOB_NAME.o
+#$ -e $HOME/logs/errors/$JOB_NAME.e
+
+fastq_file=$1
+out_folder=$2
+
+#/data1/download/FastQC/fastqc $fastq_file --outdir=$out_folder
+$FASTQC $fastq_file --outdir=$out_folder
+
+PID_FASTQC=$!
+wait $PID_FASTQC
+
+if [ $? -ne 0 ]; then
+	echo "FASTQC exited with error"
+	exit 1
+fi
+
+echo "FASTQC exited successfully"

@@ -1,0 +1,25 @@
+#!/bin/sh
+
+if [ $# -ne 2 ]; then
+	echo "This scripts all the helper scripts needed to preprocess FASTQ files and produce analysis-ready BAM files (from FASTQ2BAM)"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Project Folder> <Reference Genome:[HUMAN]>"
+	exit
+fi
+
+# ***** Stuff to extract from SampleSheet automatically: SampleRef(reference genome), Index(barcode - for readground),
+
+PROJECT_FOLDER=$(readlink -f "$1")
+ref_genome=$2
+PREPROCESS_HELPERS="$NGS_PIPE/helpers/preprocess"
+
+# Main Script
+$PREPROCESS_HELPERS/create.makefiles $PROJECT_FOLDER $ref_genome
+
+PID_MAKE=$!
+wait $PID_MAKE
+
+for sample_folder in $(ls -d $PROJECT_FOLDER/Sample*); do
+	sample_id=$(basename $sample_folder | sed 's/Sample_//g')
+	qsub -V -N preproc.$sample_id $PREPROCESS_HELPERS/build.makefiles.sge $sample_folder
+done

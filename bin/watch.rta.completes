@@ -1,0 +1,31 @@
+#!/bin/sh
+# Requires inotify-tools from https://github.com/rvoicilas/inotify-tools/wiki to use inotifywait
+
+if [ $# -ne 1 ]; then
+	echo "Usage: watchForRTAComplete <Raw Run Folder>"
+	exit
+fi
+
+RAW_RUN_FOLDER=$(readlink -f "$1")
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+out_log="$HOME/logs/watch.new.runs.o"
+
+echo "Monitoring $1 for RTAComplete.txt starting on $START_TIME" >> $out_log
+
+# Run inotifywait to monitor creation of "RTAComplete.txT" in the raw runs DIRECTORY
+while RES=$(/home/pipeline/usr/bin/bin/inotifywait -e create -q --format '%f' $RAW_RUN_FOLDER); do
+	
+	#echo "File/Directory Created"
+
+	#If "RTAComplete.txt", then initiate the preprocessing pipline by calling bcl2fastq
+	if [ "$RES" == "RTAComplete.txt" ]; then
+
+		rta_time=$(date +%y.%m.%d\|%H:%M:%S)
+
+		echo "RTA is completed for $RAW_RUN_FOLDER. Initated the preprocessing pipeline  on $rta_time" >> $out_log
+		$NGS_PIPE/python/addRunToDB.py $RAW_RUN_FOLDER
+		run.bcl2fastq $RAW_RUN_FOLDER 
+		break
+	fi 
+done

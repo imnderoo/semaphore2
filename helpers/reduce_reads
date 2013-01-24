@@ -1,0 +1,49 @@
+#!/bin/sh
+#
+if [ $# -ne 1 ]; then
+	echo "This script calls the necessary tools to call variants, recalibrate variant scores, and produce VCF files"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Project Folder>"
+	exit
+fi
+
+#Define File Location
+#====================
+# Define path to Project Folder
+if [ ! -d "$1" ]; then
+	echo "Error: Project Folder does not exist"
+	exit
+fi
+PROJECT_FOLDER=$(readlink -f "$1")
+
+# Extract Project ID from the path: Assumes form is "Project_PROJECT_NAME"
+PROJECT_ID=$(echo `basename $PROJECT_FOLDER` | cut -d "_" -f 2-)
+
+# Define path to reference data
+GATK_TOOL="/data1/software/gatk/current/GenomeAnalysisTK.jar"
+REF="/data1/gatk_resources_1_5/ucsc.hg19.fasta"
+
+# Define output files
+OUT_FILE_TIMESTAMP=$(date +%y%m%d)
+
+# Main Script
+# ===========
+
+for BAM_FILE in $(ls $PROJECT_FOLDER/Sample*/*.clean.dedup.recal.bam); do 
+
+	SAMPLE_ID=$(echo `basename $BAM_FILE` | cut -d "." -f 2)
+	OUT_REDUCE_FILE="$PROJECT_FOLDER/$PROJECT_ID.$SAMPLE_ID.reduced.bam"
+	#echo "$OUT_REDUCE_FILE"
+
+	echo "Running ReduceReads on $BAM_FILE"
+
+	nohup java -Xmx4g -jar $GATK_TOOL \
+	-T ReduceReads \
+	-R $REF \
+	-I $BAM_FILE \
+	-o $OUT_REDUCE_FILE  >> "$PROJECT_FOLDER/run_reduce_reads.out" &
+
+	PID_REDUCE=$!
+	wait $PID_REDUCE
+
+done

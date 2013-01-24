@@ -1,0 +1,59 @@
+#!/bin/sh
+
+if [ $# -ne 1 ]; then
+	echo "This script runs necessary tools to create QC reports on all *clean.dedup.recal.bam files recursively found in the input folder"
+	echo "------------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <BAM File>"
+	exit
+fi
+
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+# Main Script
+# ===========
+echo "Producing BAM QC Files using Picard, SamStats and Coverage Scripts for input BAM File"
+
+# Searches the input folder recurisvely and grep returns the file that matches the given extension
+  	
+BAM_FILE="$(readlink -f $1)"
+BAM_ID=$(basename "$BAM_FILE" | cut -d "." -f 1-2)
+OUT_DIR="$(dirname $BAM_FILE)/bamqc"
+
+cd $(dirname $BAM_FILE)
+
+OUT_FILE_PREFIX="$OUT_DIR/$BAM_ID"
+
+mkdir -p "$OUT_DIR"
+	
+echo "Running Picard Tools on $BAM_FILE"
+java -Xmx2g -jar $PICARD/CollectAlignmentSummaryMetrics.jar INPUT=$BAM_FILE OUTPUT=$OUT_FILE_PREFIX.picard.alignstat.txt REFERENCE_SEQUENCE=$REF VALIDATION_STRINGENCY=LENIENT
+
+java -Xmx2g -jar $PICARD/CollectGcBiasMetrics.jar INPUT=$BAM_FILE OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.txt CHART_OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.pdf SUMMARY_OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.summary REFERENCE_SEQUENCE=$REF VALIDATION_STRINGENCY=LENIENT
+
+convert -density 96 -quality 80 $OUT_FILE_PREFIX.picard.gcbias.pdf  $(echo $OUT_FILE_PREFIX.picard.gcbias.pdf | sed 's/\.pdf$/\.png/')
+
+java -Xmx2g -jar $PICARD/CollectInsertSizeMetrics.jar INPUT=$BAM_FILE OUTPUT=$OUT_FILE_PREFIX.picard.insert.txt HISTOGRAM_FILE=$OUT_FILE_PREFIX.picard.insert.pdf REFERENCE_SEQUENCE=$REF VALIDATION_STRINGENCY=LENIENT
+
+convert -density 96 -quality 80 $OUT_FILE_PREFIX.picard.insert.pdf $(echo $OUT_FILE_PREFIX.picard.insert.pdf | sed 's/\.pdf$/\.png/')
+
+echo "Running SAMSTAT on $BAM_FILE"
+$SAMSTAT $BAM_FILE
+# Move SAMSTAT results to bamqc/
+mv "$BAM_FILE.html" "$OUT_FILE_PREFIX.samstats.html"
+
+# echo "Creating Coverage Boxplot on $BAM_FILE"
+# run.coverage.boxplot $BAM_FILE
+
+# The reheader code has been moved to start_snpcall_pipeline
+# Add header into BAM file to indicate the Pipeline Version number. Rebuild index for GATK Variant Calling
+$SAMTOOLS view -H $BAM_FILE | sed '$a@PG\tID:Pipeline\tVN:1.0\tCL:run_preprocess_pipeine' | samtools reheader - $BAM_FILE > "$BAM_ID.clean.dedup.recal.reheader.bam" 
+$SAMTOOLS index "$BAM_ID.clean.dedup.recal.reheader.bam"
+# Back up the original bam before new header
+mv "$BAM_FILE" "$BAM_FILE.bak"
+mv "$BAM_ID.clean.dedup.recal.bai" "$BAM_ID.clean.dedup.recal.bai.bak"
+mv "$BAM_ID.clean.dedup.recal.reheader.bam" "$BAM_FILE"
+mv "$BAM_ID.clean.dedup.recal.reheader.bam.bai" "$BAM_ID.clean.dedup.recal.bai"
+ 
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Scripted started at $START_TIME and ended at $END_TIME"

@@ -1,0 +1,44 @@
+#!/bin/sh
+#
+if [ $# -ne 1 ]; then
+	echo "This script calls the necessary tools to format VCF files and pass it through AnnoVar to generate summary for each SNP"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <VCF File>"
+	exit
+fi
+
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+#Define File Location
+#====================
+# Define path to Project Folder
+if [[ ! ($1 =~ .vcf) ]]; then
+	echo "Error: Input file must have *.vcf extension."
+	exit
+fi
+
+VCF_FILE=$(readlink -f "$1")
+OUT_FOLDER="$(dirname $VCF_FILE)/annovar"
+mkdir -p OUT_FOLDER
+
+# Extract Project ID from the path: Assumes form is "Project_PROJECT_NAME"
+VCF_ID=$(basename $VCF_FILE)
+VCF_ID="${VCF_ID%.*}"
+
+# Define path to reference data
+ANNOVAR_TOOL="/data1/software/annovar"
+ANNOVAR_IN="$OUT_FOLDER/$VCF_ID.annovar.input"
+ANNOVAR_OUT="$OUT_FOLDER/$VCF_ID.annovar.summary"
+
+# Main Script
+	
+	echo "Converting VCF format into Annovar input format"
+	perl $ANNOVAR_TOOL/convert2annovar.pl -outfile "$ANNOVAR_IN" -includeinfo -allallele -withzyg -format vcf4 $VCF_FILE
+
+	# TODO: Need to automatically find the latest build, dbsnp, and other versions
+	 perl $ANNOVAR_TOOL/summarize_annovar.pl $ANNOVAR_IN "$ANNOVAR_TOOL/humandb" -outfile "$OUT_FOLDER/$VCF_ID" -buildver hg19 -verdbsnp 135 -ver1000g 1000g2011may --remove
+
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Script $(basename $0) started at $START_TIME and ended at $END_TIME"
+

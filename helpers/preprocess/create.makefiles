@@ -1,0 +1,33 @@
+#!/bin/sh
+#
+if [ $# -ne 2 ]; then
+	echo "This script creates a Makefile (instructions for the preprocessing pipeline) for each Samples/ in the Project/ using bwa_bam_builder."
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Project Folder> <Reference Genome:[HUMAN]>"
+	exit
+fi
+
+if [ ! -d "$1" ]; then
+	echo "Error: Project Folder does not exist"
+	exit
+fi
+
+PROJECT_FOLDER=$(readlink -f "$1")
+
+# Extract Project ID from the path: Assumes form is "Project_PROJECT_NAME"
+PROJECT_ID=$(echo `basename $PROJECT_FOLDER` | cut -d "_" -f 2-)
+
+#Define path to reference genome
+if [ "$2" = "HUMAN" ]; then
+	REF="/data1/gatk_resources_1_5/ucsc.hg19.fasta"
+else
+	REF=$2
+fi 
+
+# Main Script
+# ===========
+echo "Building *.bam files and recalibrating *.bam files for every Sample found in the Project folder"
+for SAMPLE_FOLDER in $(ls -d $PROJECT_FOLDER/Sample*); do 
+	# Need to define readgroup header here and then pass it in as a parameter
+	$NGS_PIPE/helpers/preprocess/bwa_bam_builder -d "$SAMPLE_FOLDER/" --reference "$REF" --project "$PROJECT_ID" > "$SAMPLE_FOLDER/Makefile"
+done

@@ -1,0 +1,61 @@
+#!/usr/bin/python
+
+"""A basic fork in action"""
+
+# Inspiration https://github.com/jorgsk/python-bwa-wrapper/blob/master/pipeline.py
+
+import os, time, sys
+import glob
+import subprocess
+import getopt
+import preprocess.helpers
+
+def usage():
+  print "USAGE: %s --data-path <path to fastq files> --read-group <read group string> --reference <reference name> --project <project name>" % os.path.basename(sys.argv[0])
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hd:vr:R:", ["help", "data-path=","read-group=","reference=", "project="])
+    except getopt.GetoptError, err:
+        # print help information and exit:
+        print str(err) # will print something like "option -a not recognized"
+        usage()
+        sys.exit(2)
+
+    data_path = None
+    read_group = None
+    reference = None
+    project = None
+    verbose = False
+    for o, a in opts:
+        if o == "-v":
+            verbose = True
+        elif o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-d", "--data-path"):
+            data_path = a
+        elif o in ("-r", "--read-group"):
+            read_group = a 
+        elif o in ("-R", "--reference"):
+            reference = a
+	elif o in ("-p", "--project"):
+	    project = a
+        else:
+            assert False, "unhandled option"
+    if reference == None:
+	print "ERROR: You must provide a reference"
+	usage()
+ 	sys.exit(2)
+    if data_path == None:
+	print "ERROR: You must provide the data_path to the FASTQ files"
+	usage()
+	sys,exit(2)
+    preprocess.helpers.process_sample_directory(data_path, read_group, reference, project)
+    # ...
+
+if __name__ == "__main__":
+    main()
+    #my_fork()
+    #list_files()
+    #system_call()

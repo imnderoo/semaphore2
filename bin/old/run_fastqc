@@ -1,0 +1,40 @@
+#!/bin/sh
+#
+if [ $# -ne 1 ]; then
+	echo "This script runs FASTQC to produce QC reports on all the FASTQ files produced in a run (Finds all samples for all projects)"
+	echo "The FASTQC reports will be saved in the same folder as where the FASTQ files are located."
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Input Folder>"
+	exit
+fi
+
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+#Define File Location
+#====================
+if [ ! -d "$1" ]; then
+	echo "Error: InputFolder does not exist"
+	exit
+fi
+
+IN_FOLDER=$(readlink -f "$1")
+
+# Main Script
+# ===========
+echo "Producing FASTQC reports for each FASTQ file found (recursively) in the Input folder"
+
+for FASTQ in $(find $IN_FOLDER | grep ".fastq.gz$"); do
+
+	FASTQ_FILE=$(readlink -f $FASTQ)
+	OUT_FOLDER="$(dirname $FASTQ_FILE)/fastqc"
+	mkdir -p $OUT_FOLDER
+
+	nohup $FASTQC $FASTQ_FILE --outdir=$OUT_FOLDER &
+			
+	PID_FASTQC=$!
+	wait $PID_FASTQC
+done
+
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Scripted started at $START_TIME and ended at $END_TIME"

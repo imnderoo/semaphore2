@@ -1,0 +1,135 @@
+#!/bin/sh
+#
+if [ $# -ne 1 ]; then
+	echo "This script calls the necessary tools to call variants, recalibrate variant scores, and produce VCF files"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Project Folder>"
+	exit
+fi
+
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+FINAL_BAM_FILE_EXTENSION=".clean.dedup.recal.bam$"
+
+#Define File Location
+#====================
+# Define path to Project Folder
+if [ ! -d "$1" ]; then
+	echo "Error: Project Folder does not exist"
+	exit
+fi
+PROJECT_FOLDER=$(readlink -f "$1")
+
+# Extract Project ID from the path: Assumes form is "Project_PROJECT_NAME"
+PROJECT_ID=$(echo `basename $PROJECT_FOLDER`)
+
+# Define output files
+OUT_FILE_TIMESTAMP=$(date +%y%m%d)
+OUT_RAW_VCF_FILE="$PROJECT_FOLDER/$PROJECT_ID.$OUT_FILE_TIMESTAMP.raw.snps.vcf"
+OUT_RECAL_VCF_FILE="$PROJECT_FOLDER/$PROJECT_ID.$OUT_FILE_TIMESTAMP.recal.filtered.snps.vcf"
+
+RECAL_FILE="$PROJECT_FOLDER/$PROJECT_ID.$OUT_FILE_TIMESTAMP.snps.recal"
+TRANCHES_FILE="$PROJECT_FOLDER/$PROJECT_ID.$OUT_FILE_TIMESTAMP.snps.tranches"
+RECAL_R_FILE="$PROJECT_FOLDER/$PROJECT_ID.$OUT_FILE_TIMESTAMP.snps.R"
+
+OUT_LOG_FILE="$PROJECT_FOLDER/$(basename $0).$OUT_FILE_TIMESTAMP.out"
+
+# Main Script
+# ===========
+
+# ** TODO: LOOK INTO RUNNING REDUCEBAM BEFORE UNIFIED GENOTYPER
+# ** TODO: LOOK INTO USING GATK-QUEUE TO RUN UNIFIED GENOTYPER SO WE DONT NEED TO ALTER ULIMIT FOR MAX # OPEN FILES
+
+echo "Running UnifiedGenotyper on all existing samples in $PROJECT_FOLDER to produce the raw VCF files" > $OUT_LOG_FILE
+
+#Iterate through all sample folders to extract the .clean.redup.recal.bam files
+INPUT_BAM_FILES=""
+INPUT_BAM_LOG=""
+NUM_INPUT_BAM=0
+
+for BAM_FILE in $(find $PROJECT_FOLDER | grep $FINAL_BAM_FILE_EXTENSION); do
+	# Need to define readgroup header here and then pass it in as a parameter
+	INPUT_BAM_FILES=$INPUT_BAM_FILES"-I $BAM_FILE "
+	INPUT_BAM_LOG=$INPUT_BAM_LOG"$BAM_FILE,"
+	# echo "$INPUT_BAM_FILES"
+
+	NUM_INPUT_BAM=$(( NUM_INPUT_BAM + 1 ))
+done
+
+echo "$NUM_INPUT_BAM BAM File found" >> $OUT_LOG_FILE
+
+echo "Input BAMs: $INPUT_BAM_LOG" >> $OUT_LOG_FILE
+
+#Running Unified Genotyper
+ulimit -n 100000
+# NOTE: MUST SET ULIMIT to 10,000 BEFORE RUNNING THIS OR ELSE IT WILL FAIL
+
+nohup java -Xmx12g -jar $GATK_TOOL \
+-T UnifiedGenotyper \
+-nt 8 \
+-dcov 200 \
+-glm SNP \
+-R $REF \
+--dbsnp $DBSNP \
+-l INFO \
+-o $OUT_RAW_VCF_FILE \
+$INPUT_BAM_FILES >> $OUT_LOG_FILE &
+
+PID_GENOTYPER=$!
+wait $PID_GENOTYPER
+
+if [ $NUM_INPUT_BAM -eq 1 ]; then
+echo "Running GATK VariantCalibrator to produce the necessary parameters files for recalibration. Only 1 file detected (AD and InbreedingCoeff disabled)" >> $OUT_LOG_FILE
+nohup java -Xmx4g -jar $GATK_TOOL \
+-T VariantRecalibrator \
+-R $REF \
+-input $OUT_RAW_VCF_FILE \
+-resource:hapmap,known=false,training=true,truth=true,prior=15.0 $HAPMAP \
+-resource:omni,known=false,training=true,truth=false,prior=12.0 $OMNI \
+-resource:dbsnp,known=true,training=false,truth=false,prior=6.0 $DBSNP \
+-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS -an MQ -an DP \
+-mode SNP \
+-recalFile $RECAL_FILE \
+-tranchesFile $TRANCHES_FILE \
+-rscriptFile $RECAL_R_FILE  >> $OUT_LOG_FILE &
+
+PID_VCF_RECAL=$!
+wait $PID_VCF_RECAL
+
+else
+
+echo "Running GATK VariantCalibrator to produce the necessary parameters files for recalibration" >> $OUT_LOG_FILE
+nohup java -Xmx4g -jar $GATK_TOOL \
+-T VariantRecalibrator \
+-R $REF \
+-input $OUT_RAW_VCF_FILE \
+-resource:hapmap,known=false,training=true,truth=true,prior=15.0 $HAPMAP \
+-resource:omni,known=false,training=true,truth=false,prior=12.0 $OMNI \
+-resource:dbsnp,known=true,training=false,truth=false,prior=6.0 $DBSNP \
+-an QD -an HaplotypeScore -an MQRankSum -an ReadPosRankSum -an FS -an MQ -an DP -an InbreedingCoeff \
+-mode SNP \
+-recalFile $RECAL_FILE \
+-tranchesFile $TRANCHES_FILE \
+-rscriptFile $RECAL_R_FILE  >> $OUT_LOG_FILE &
+
+PID_VCF_RECAL=$!
+wait $PID_VCF_RECAL
+
+fi
+
+R CMD BATCH --no-restore --no-save $RECAL_R_FILE /dev/null 
+
+echo "Running GATK ApplyRecalibration to produce the recalibrated and filtered VCF file" >> $OUT_LOG_FILE
+nohup java -Xmx4g -jar $GATK_TOOL \
+-T ApplyRecalibration \
+-R $REF \
+-input $OUT_RAW_VCF_FILE \
+--ts_filter_level 99.0 \
+-tranchesFile $TRANCHES_FILE \
+-recalFile $RECAL_FILE \
+-mode SNP \
+-o $OUT_RECAL_VCF_FILE >> $OUT_LOG_FILE &
+
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Script $(basename $0) began at $START_TIME and ended at $END_TIME" >> $OUT_LOG_FILE

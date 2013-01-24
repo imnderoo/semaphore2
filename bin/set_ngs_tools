@@ -1,0 +1,30 @@
+#!/bin/sh
+# Best to run this during login by adding 'source set_ngs_tools' to '.bash_profile'
+
+# Pipeline VN:1.0
+
+# Setting Location of NGS Pipe Files (temporary)
+export NGS_PIPE="/data1/semaphore"
+export PYTHONPATH="$NGS_PIPE/python"
+export R_LIB="$NGS_PIPE/r_lib"
+export MYSQL_CONFIG="/usr/bin/mysql_config"
+
+#Setting Location of NGS Pipe tools
+export BCL2FASTA_TOOL="/data1/download/CASAVA_v1.8.2/bin/configureBclToFastq.pl" #CASAVA v1.8,2
+export ANNOVAR_TOOL="/data1/software/annovar" #AnnoVar: Last Updated Dec 2012
+export GATK_TOOL="/data1/software/gatk/current/GenomeAnalysisTK.jar" #GATK v2.2
+export PICARD="/data1/download/picard-tools-1.79" #Picard v1.79
+export FASTQC="/data1/download/FastQC/fastqc" #FastQC v0.10.1
+export SAMSTAT="/data1/software/bin/samstat" #SAMStat v1.08
+export SAMTOOLS="/data1/software/bin/samtools" #SAMTools v0.1.18 (r982:295)
+
+# Setting ENV variables for reference files
+export REF="/data1/gatk_resources_1_5/ucsc.hg19.fasta"
+export HAPMAP="/data1/gatk_resources_1_5/hapmap_3.3.hg19.vcf.gz"
+export OMNI="/data1/gatk_resources_1_5/1000G_omni2.5.hg19.sites.vcf.gz"
+export DBSNP="/data1/gatk_resources_1_5/dbsnp_135.hg19.vcf.gz"
+export EXOME="/data1/regions/refSeq.exon.sorted.bed"
+export REFGENE="/data1/genelists/refGene.broad.sorted.txt"
+
+
+

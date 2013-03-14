@@ -1,0 +1,67 @@
+#!/bin/bash
+
+#$ -S /bin/bash
+#$ -m ae
+#$ -M sge_test
+#$ -o $HOME/logs/coverage/$JOB_NAME.o
+#$ -e $HOME/logs/errors/$JOB_NAME.e
+
+if [ $# -lt 1 ]; then
+	echo "This script uses coverageBED and other helper scripts to generate depth of coverage stats for whole sequence and for the genes specified in target gene list."
+	echo "Default target gene list is in /data1/genelists/test.targetGenes.txt"
+	echo "--------------------------------------------------------------------------------------------------------------------------"  	
+	echo "Usage: $(basename $0) <Project.Sample.*.bam File> <Optional: List of target genes for boxplot> <Optional: BED file for targeted regions>"
+	exit
+fi
+
+if [ $# -eq 2 ]; then
+	TARGET_GENES=$2
+else
+	TARGET_GENES="/data1/genelists/test.targetGenes.txt"
+fi
+
+if [ $# -eq 3 ]; then
+	TARGET_GENES=$2
+	TARGET_REGIONS=$3
+else
+	TARGET_GENES="/data1/genelists/test.targetGenes.txt"
+	TARGET_REGIONS=$EXOME
+fi
+
+# Define File Location
+COVERAGE_HELPERS=$NGS_PIPE/helpers/coverage
+
+#Input File Format: ProjecTID.SampleID.*.bam
+BAM_FILE=$(readlink -f $1)
+BAM_ID=$(basename "$BAM_FILE" | cut -d "." -f 1-2)
+
+OUT_FOLDER="$(dirname $BAM_FILE)/coverage"
+OUT_GENE_FOLDER="$OUT_FOLDER/gene_coverage"
+OUT_BOXPLOT_FOLDER="$OUT_GENE_FOLDER/boxplot"
+
+mkdir -p $OUT_BOXPLOT_FOLDER
+
+OUT_HIST="$OUT_FOLDER/$BAM_ID.coverage.hist"
+OUT_TMP="$OUT_FOLDER/$BAM_ID.coverage.tmp"
+OUT_SUM="$OUT_FOLDER/$BAM_ID.coverage.summary"
+
+# Run the DepthOfCoverage Tool
+coverageBed -abam $BAM_FILE -b $TARGET_REGIONS -hist > $OUT_HIST
+
+# Parse Coverage Histogram to generate Summary
+$COVERAGE_HELPERS/create_coverage_summary.pl $OUT_HIST > $OUT_TMP
+
+# Format Summary to include Gene + Exon name (tab-delimited)
+$COVERAGE_HELPERS/format_coverage_summary.pl $OUT_TMP $REFGENE $TARGET_REGIONS > $OUT_SUM
+
+# Extract the desires gene from summary. Create a summary for each gene and saves them in the gene folder.
+$COVERAGE_HELPERS/format_gene_coverage.pl $OUT_SUM $TARGET_GENES $OUT_GENE_FOLDER
+
+# Run R Command to generate BoxPlot for the depth of coverage of all the exons in each gene
+for GENE_COVERAGE in $(ls $OUT_GENE_FOLDER/*.txt); do
+	R CMD BATCH --no-restore --no-save --quiet "--args $(readlink -f $GENE_COVERAGE) $OUT_BOXPLOT_FOLDER" $R_LIB/coverage_boxplot.R ./coverage_boxplot.out
+done
+
+for BOXPLOT in $(ls $OUT_BOXPLOT_FOLDER/*.pdf); do
+	convert -density 96 -quality 80 $BOXPLOT $(echo $BOXPLOT | sed 's/\.pdf$/\.png/') 
+done

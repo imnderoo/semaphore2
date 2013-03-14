@@ -11,15 +11,17 @@ fi
 
 PROJECT_FOLDER=$(readlink -f "$1")
 ref_genome=$2
-PREPROCESS_HELPERS="$NGS_PIPE/helpers/preprocess"
+HELPERS="$NGS_PIPE/helpers/preprocess"
 
 # Main Script
-$PREPROCESS_HELPERS/create.makefiles $PROJECT_FOLDER $ref_genome
+$HELPERS/create.makefiles $PROJECT_FOLDER $ref_genome
 
-PID_MAKE=$!
-wait $PID_MAKE
+mkdir -p $HOME/logs/preprocess/
+mkdir -p $HOME/logs/preprocess/bwa/
+mkdir -p $HOME/logs/preprocess/sam.merge/
+mkdir -p $HOME/logs/errors/
 
 for sample_folder in $(ls -d $PROJECT_FOLDER/Sample*); do
 	sample_id=$(basename $sample_folder | sed 's/Sample_//g')
-	qsub -V -N preproc.$sample_id $PREPROCESS_HELPERS/build.makefiles.sge $sample_folder
+	qsub -hard -l slots_limit=1 -l mem_limit=1G -N preproc.$sample_id $HELPERS/build.makefiles.sge $sample_folder
 done

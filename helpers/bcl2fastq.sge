@@ -1,0 +1,51 @@
+#!/bin/bash
+
+#Include option to specify outfolder?
+
+if [ $# -ne 1 ]; then
+	echo "This script converts all the Basecall (BCL) files from the Raw Run folder into FASTQ files."
+	echo "The FASTQ files are stored in their respective Project and Sample folders as defined by the SampleSheet"
+	echo "-------------------------------------------------------------------------------------------------------"	
+	echo "Usage: $(basename $0) <Raw Run Folder>" 
+	exit
+fi
+
+#$ -S /bin/bash
+#$ -m n
+#$ -M sge_test
+#$ -o $HOME/logs/bcl2fastq/$JOB_NAME.o
+#$ -j y
+
+OUT_FOLDER="/data2/analysis/$(basename $1)/"
+mkdir -p "$OUT_FOLDER"
+
+RAW_RUN_FOLDER=$(readlink -f "$1")
+BCL_FOLDER=$RAW_RUN_FOLDER/Data/Intensities/BaseCalls
+sample_sheet=$(ls $RAW_RUN_FOLDER/SampleSheet*.csv)
+
+# Fix up SampleSheet
+sed -i 's/ //g' $sample_sheet # Remove all spaces
+sed -i 's/\,*$//g' $sample_sheet # Remove trailing commas
+
+#Main Script
+echo "Creating Makefiles to convert BCL into FASTQ files..."
+echo "$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $sample_sheet --force"
+$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $sample_sheet --force
+
+echo "Building FASTQ files..."
+make -C $OUT_FOLDER
+
+echo "Conversion of BCL into FASTQ Complete"
+
+wait $!
+
+if grep -q "\[configureBclToFastq.pl\].*ERROR" $HOME/logs/bcl2fastq/$JOB_NAME.o
+then
+	echo "configureBclToFastq encountered an error. Exiting shell script."
+	echo "Check $HOME/logs/bcl2fastq/bcl2fastq.$(basename $1 | sed "s/\///g").o for details." 
+	exit 1
+fi
+
+echo "Performing  FASTQC"
+
+run.fastqc.sge $OUT_FOLDER

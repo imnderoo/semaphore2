@@ -1,0 +1,39 @@
+Folders that should probably keep
+=================================
+/data2/raw/runs/<RUN_ID>/Interop
+/data2/raw/runs/<RUN_ID>/Data/reports
+/data2/raw/runs/<RUN_ID>/Data/Status_Files
+	- These are raw folders containing  metrics and summary
+
+/data2/raw/runs/<RUN_ID>/Config
+/data2/raw/runs/<RUN_ID>/Recipe
+/data2/raw/runs/<RUN_ID>PeriodicSaveRates
+	- These are raw folders containing configuration parameters for the
+	  runs.
+
+/data2/raw/runs/<RUN_ID>/Data/RTALogs
+/data2/raw/runs/<RUN_ID>/Logs
+	- These are raw folders containing the log files produced by the
+	  machine or RTA
+
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/Demultiplex_Stats.htm
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/BustardSummary.xml
+	- These files contain summary QC metrics
+
+Folders that we should probably delete
+=======================================
+/data2/analysis/<RUN_ID>/Undetermined_indices
+	- There are fastq.qz in there that takes up a lot of space... do we need to keep?
+
+/data2/raw/runs/<RUN_ID>/Data/Intensities
+/data2/raw/runs/<RUN_ID>/Thumbnail_Images
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/Matrix
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/Phasing
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/SignalMeans
+/data2/analysis/<RUN_ID>/Basecall_Stats_*/Temp
+	- These are raw run folders containing image / signal intensities
+	- Do we need to keep the raw images / signal intensities for audits? 
+	- Is it sufficient to just keep the QC metrics?
+
+/data2/analysis/<RUN_ID>/Temp
+	- Seems to be empty directories

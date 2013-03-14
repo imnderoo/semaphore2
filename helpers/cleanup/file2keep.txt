@@ -1,0 +1,20 @@
+.fastq.gz
+.bam
+.clean.dedup.recal.bam
+.jobreport
+.raw.snps.vcf 
+.raw.snps.vcf.idx
+.recal.filtered.snps.vcf
+.recal.filtered.snps.vcf.idx
+.snps.R.pdf
+.snps.tranches.pdf
+
+# Comments / Questions
+
+# Should we keep the fastq.gz files because some samples only have FASTQ
+# produced
+
+# Should we keep the original BAM or the clean.dedup.recal version?
+
+# Should we keep any VCF? If we keep the RAW one, we save a lot of processing
+# time if we need to re-evaluate an old sample.

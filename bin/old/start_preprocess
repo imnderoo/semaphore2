@@ -1,0 +1,43 @@
+#!/bin/sh
+
+if [ $# -ne 2 ]; then
+	echo "This scripts all the helper scripts needed to preprocess FASTQ files and produce analysis-ready BAM files (from FASTQ2BAM)"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Project Folder> <Reference Genome:[HUMAN]>"
+	exit
+fi
+
+# ***** Stuff to extract from SampleSheet automatically: SampleRef(reference genome), Index(barcode - for readground),
+
+# Define File Location
+# ====================
+PROJECT_FOLDER=$(readlink -f "$1")
+ref_genome=$2
+START_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+PREPROCESS_HELPERS="$NGS_PIPE_HELPERS/preprocess"
+
+out_log_dir="$NGS_LOGS/$(basename $0)"
+mkdir -p $out_log_dir
+out_log="$out_log_dir/$(basename $PROJECT_FOLDER).out"
+
+# Main Script
+# ===========
+echo "Configure Preprocess pipeline" > $out_log
+$PREPROCESS_HELPERS/create_makefiles $PROJECT_FOLDER $ref_genome >> $out_log
+
+PID_MAKE=$!
+wait $PID_MAKE
+
+echo "Build Preprocess pipeline (Generate cleaned and recalibrated BAMs)" >> $out_log
+$PREPROCESS_HELPERS/build_makefiles $PROJECT_FOLDER >> $out_log
+
+PID_BUILD=$!
+wait $PID_BUILD
+
+#if [ $PID_BUILD -eq 0 ]; then
+	# In the make script, Move the bamqc folder and the clean.dedup.recal.bam into the archive folder.
+#fi
+
+END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
+
+echo "Script $(basename $0) began at $START_TIME and ended at $END_TIME" >> $out_log

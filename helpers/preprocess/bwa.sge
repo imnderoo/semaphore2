@@ -1,0 +1,70 @@
+#!/bin/bash
+
+if [ $# -ne 3 ]; then
+        echo "Usage: $(basename $0) <read1.fast.gz> <read2.fast.gz> <sampleid>"
+        exit
+fi
+
+#$ -S /bin/bash
+#$ -m n
+#$ -j y
+#$ -M sge_test
+#$ -o $HOME/logs/preprocess/bwa/$JOB_NAME.o
+
+pair_r1=$1 # Should be the r1.fastq.gz file full path
+pair_r2=$2 # Should be the r2.fastq.gz file full path
+sample_id=$3 # Should be the tab delimited param list surrounded by single quote
+
+if [ ! -f $pair_r1.sai ];
+then
+	# Align Read 2
+	# Running more than 1 bwa simultaneously across all project seems too much of a load on servers
+	bwa aln -t 8 -q 20 $REF $pair_r1 > $pair_r1.sai
+	aln1_job=$!
+
+	wait $aln1_job
+
+	if [ $? -gt 0 ]; then
+        	exit 1
+	fi
+fi
+
+if [ ! -f $pair_r2.sai ];
+then
+	# Align Read 1
+	bwa aln -t 8 -q 20 $REF $pair_r2 > $pair_r2.sai
+	aln2_job=$!
+
+	wait $aln2_job
+	if [ $? -gt 0 ]; then
+		exit 1
+	fi
+
+fi
+
+if [ ! -f $pair_r1.bam ];
+then
+	# Create BAM
+	read_group="@RG	ID:$sample_id	PL:illumina	PU:barcode	LB:$sample_id	SM:$sample_id"
+
+	# Use eval "commmand with single quotes in it" to avoid errors on single quote
+	eval "bwa sampe -r '$read_group' $REF $pair_r1.sai $pair_r2.sai $pair_r1 $pair_r2 | samtools view -bhS - > $pair_r1.bam"
+	
+	wait $!
+	
+	#bwa does't seem to use non-zero exit status for errors so...
+	r1fastqSize=$(wc -c $pair_r1 | cut -d ' ' -f1)
+	r2fastqSize=$(wc -c $pair_r2 | cut -d ' ' -f1)
+	sumfastqSize=$(($r1fastqSize+$r2fastqSize))
+	finalBamSize=$(wc -c $pair_r1.bam | cut -d ' ' -f1)
+	
+	echo "$sumfastqSize and final $finalBamSize"
+
+	if [ $sumfastqSize -gt $finalBamSize ]; then
+		echo "The final merged BAM file is smaller than the 2 fastq.gz files. This is most likely an error and the merged BAM was deleted." 1>&2
+		echo "If nothing went wrong, then you can re-run:  " 1>&2
+		echo "bwa sampe -r '$read_group' $REF $pair_r1.sai $pair_r2.sai $pair_r1 $pair_r2 | samtools view -bhS - > $pair_r1.bam" 1>&2
+		rm $pair_r1.bam
+		exit 1
+	fi
+fi

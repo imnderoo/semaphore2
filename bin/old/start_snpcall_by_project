@@ -56,12 +56,11 @@ for BAM_FILE in $(find $PROJECT_FOLDER | grep $FINAL_BAM_FILE_EXTENSION); do
 	NUM_INPUT_BAM=$(( NUM_INPUT_BAM + 1 ))
 done
 
-echo "$NUM_INPUT_BAM BAM File found" >> $OUT_LOG_FILE
+#echo "$NUM_INPUT_BAM BAM File found" >> $OUT_LOG_FILE
 
-echo "Input BAMs: $INPUT_BAM_LOG" >> $OUT_LOG_FILE
+#echo "Input BAMs: $INPUT_BAM_LOG" >> $OUT_LOG_FILE
 
 #Running Unified Genotyper
-ulimit -n 100000
 # NOTE: MUST SET ULIMIT to 10,000 BEFORE RUNNING THIS OR ELSE IT WILL FAIL
 
 nohup java -Xmx12g -jar $GATK_TOOL \

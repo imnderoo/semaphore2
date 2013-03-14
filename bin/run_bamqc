@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -ne 1 ]; then
 	echo "This script runs necessary tools to create QC reports on all *clean.dedup.recal.bam files recursively found in the input folder"
@@ -30,11 +30,15 @@ java -Xmx2g -jar $PICARD/CollectAlignmentSummaryMetrics.jar INPUT=$BAM_FILE OUTP
 
 java -Xmx2g -jar $PICARD/CollectGcBiasMetrics.jar INPUT=$BAM_FILE OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.txt CHART_OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.pdf SUMMARY_OUTPUT=$OUT_FILE_PREFIX.picard.gcbias.summary REFERENCE_SEQUENCE=$REF VALIDATION_STRINGENCY=LENIENT
 
-convert -density 96 -quality 80 $OUT_FILE_PREFIX.picard.gcbias.pdf  $(echo $OUT_FILE_PREFIX.picard.gcbias.pdf | sed 's/\.pdf$/\.png/')
+out_pdf=$(readlink -f "$OUT_FILE_PREFIX.picard.gcbbias.pdf")
+
+convert -density 96 -quality 80 $out_pdf $(echo $out_pdf | sed 's/\.pdf$/\.png/')
 
 java -Xmx2g -jar $PICARD/CollectInsertSizeMetrics.jar INPUT=$BAM_FILE OUTPUT=$OUT_FILE_PREFIX.picard.insert.txt HISTOGRAM_FILE=$OUT_FILE_PREFIX.picard.insert.pdf REFERENCE_SEQUENCE=$REF VALIDATION_STRINGENCY=LENIENT
 
-convert -density 96 -quality 80 $OUT_FILE_PREFIX.picard.insert.pdf $(echo $OUT_FILE_PREFIX.picard.insert.pdf | sed 's/\.pdf$/\.png/')
+out_pdf=$(readlink -f "$OUT_FILE_PREFIX.picard.insert.pdf")
+
+convert -density 96 -quality 80 $out_pdf $(echo $out_pdf | sed 's/\.pdf$/\.png/')
 
 echo "Running SAMSTAT on $BAM_FILE"
 $SAMSTAT $BAM_FILE

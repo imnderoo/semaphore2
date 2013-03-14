@@ -1,5 +1,4 @@
-#!/usr/local/bin/python3.3
-
+#!/usr/local/bin/python3
 """Test script for mysql """
 
 # Inspiration https://github.com/jorgsk/python-bwa-wrapper/blob/master/pipeline.py
@@ -12,8 +11,8 @@ import pymysql
 
 def main():
 	parser = argparse.ArgumentParser(description='Script for updating runs and mapping samples to runs by fetching SampleSheets.')
-	parser.add_argument('runFolder', help='Full path to run folder')
- 
+	parser.add_argument('runFolder', help='Full path to raw run folder (data2/raw/runs/')
+	parser.add_argument('runStatus', help='0 if QC required. 2 if RUN failed. 3 if BCL2FASTQ failed')
 	args = parser.parse_args()	
 	conn = connect()
 	cursor = conn.cursor()
@@ -21,58 +20,21 @@ def main():
 	args.runFolder = args.runFolder.rstrip('\/')
 	runName = os.path.basename(args.runFolder)
 
-	runURL = args.runFolder.replace("/data2/", "http://172.31.104.12/")
-
-	sql = """INSERT INTO run (version, name, path) VALUES (0, '%s', '%s')""" % (runName, runURL)
-	# sql = """UPDATE run SET path = '%s' WHERE name = '%s'""" % (runURL, runName)
-	execute_insert(conn, cursor, sql)
-
-	sql = """SELECT id FROM run WHERE name = '%s'""" % (runName)
+	sql = """SELECT COUNT(id) FROM run WHERE name = '%s'""" % (runName)
 	cursor.execute(sql)
-	runID=cursor.fetchone()[0]
-
-	# Open SampleSheet
-	for sampleSheet in os.listdir(args.runFolder):
-		if sampleSheet.startswith("SampleSheet"):
-			sampleSheetPath = os.path.join(args.runFolder, sampleSheet)
-			f = open(sampleSheetPath, 'r')
-			f.readline()
-
-			for line in f:
-				# FCID,lane,sampleID,sampleRefGenome,Index,Descriptor,Control,Recipe,Operator.Project
-				sampleLine = line.split(",")
-
-				# SampleName: assignedID
-				sampleName = "".join(sampleLine[2].split()) # "".join(str.split()) removes all spaces, including newline and tabs
-
-				# ProjectName
-				projectName = sampleLine[9].replace(" ", "") # Remove spaces
-				projectName = projectName.replace("_", "") # Remove underlines
-				projectName = projectName.replace(".", "") # Remove random periods
-				projectName = "".join(projectName.split()) # Remove newlines and tabs
-				
-				# Add Project from SampleSheet into 
-				sql = """INSERT INTO study (version, name) VALUES (0, '%s')""" % (projectName)
-				execute_insert(conn, cursor, sql)
-						
-				sql = """SELECT id FROM study WHERE name = '%s'""" % (projectName)
-				cursor.execute(sql)
-				projectID=cursor.fetchone()[0]
+	runIDCount = cursor.fetchone()[0]
+	runStatus = int(args.runStatus)
 	
-				sampleStatusID = 1 # In Progress
+	if (runIDCount == 0):
+		runURL = args.runFolder.replace("/data2/", "http://172.31.104.12/")
+		createdTime = "20" + runName[0:2] + "-" + runName[2:4] + "-" + runName[4:6]
+		# status_id: 0-QC Required, 1-QC Passed, 2-QC Failed, 3-BCL2FASTQ Failed
+		sql = """INSERT INTO run (version, name, path, status_id, created) VALUES (0, '%s', '%s', %d, '%s')""" % (runName, runURL, runStatus, createdTime)
+		execute_insert(conn, cursor, sql)
+	else:
+		sql = """UPDATE run SET status_id = %d WHERE name = '%s'""" % (runStatus, runName)
+		execute_insert(conn, cursor, sql)
 
-				createdTime = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime(os.path.getctime(sampleSheetPath)))
-
-				sql = """INSERT INTO sample (version, assigned_id, created, status_id, study_id, run_id) VALUES (0, '%s', '%s', %d, %d, %d)""" % (sampleName, createdTime, sampleStatusID, projectID, runID)
-				# sql = """UPDATE sample SET run_id = %d WHERE assigned_id = '%s'""" % (runID, sampleName)
-				execute_insert(conn, cursor, sql)
-
-				sql = """SELECT id FROM sample WHERE assigned_id = '%s'""" % (sampleName)
-				cursor.execute(sql)
-				sampleID=cursor.fetchone()[0]
-
-			f.close()
-	
 	conn.close()
 	cursor.close()
 	gc.collect()

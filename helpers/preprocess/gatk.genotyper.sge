@@ -1,0 +1,33 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+        echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
+        echo "--------------------------------------------------------------------------------------------------------------------------"
+        echo "Usage: $(basename $0) <input *.raw.snps.vcf> <output *.clean.dedup.recal.bam"
+        exit
+fi
+
+infile=$1
+outfile=$2
+
+#$ -S /bin/bash
+#$ -m ae
+#$ -M sge_test
+#$ -o $HOME/logs/preprocess/gatk.genotyper/$JOB_NAME.o
+#$ -j y
+
+java -Xmx12g -jar $GATK_TOOL -T UnifiedGenotyper \
+-nt 8 -dcov 200 \
+-glm SNP -R $REF \
+--dbsnp $DBSNP -l INFO \
+-o $outfile \
+-I $infile 
+
+wait $!
+
+if [ $? -gt 0 ]; 
+then
+	exit 1
+fi
+
+

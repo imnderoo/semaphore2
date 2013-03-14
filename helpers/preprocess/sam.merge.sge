@@ -1,0 +1,31 @@
+#!/bin/bash
+
+if [ $# -lt 2 ]; then
+        echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
+        echo "--------------------------------------------------------------------------------------------------------------------------"
+        echo "Usage: $(basename $0) <sampleid.bam> <segment1.bam> <segment2.bam> ... <segmentN.bam>"
+        exit
+fi
+
+#$ -S /bin/bash
+#$ -m n
+#$ -M sge_test
+#$ -o $HOME/logs/preprocess/sam.merge/$JOB_NAME.o
+#$ -j y
+
+if [ $# -eq 2 ]; 
+then
+	cp $1 $0	
+else
+	samtools merge $@
+fi
+
+sam_merge_job=$!
+wait $sam_merge_job
+
+if [ $? -gt 0 ]; 
+then
+	exit 1
+fi
+
+

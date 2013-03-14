@@ -36,7 +36,7 @@ ANNOVAR_OUT="$OUT_FOLDER/$VCF_ID.annovar.summary"
 	perl $ANNOVAR_TOOL/convert2annovar.pl -outfile "$ANNOVAR_IN" -includeinfo -allallele -withzyg -format vcf4 $VCF_FILE
 
 	# TODO: Need to automatically find the latest build, dbsnp, and other versions
-	 perl $ANNOVAR_TOOL/summarize_annovar.pl $ANNOVAR_IN "$ANNOVAR_TOOL/humandb" -outfile "$OUT_FOLDER/$VCF_ID" -buildver hg19 -verdbsnp 135 -ver1000g 1000g2011may --remove
+	perl $ANNOVAR_TOOL/summarize_annovar.pl $ANNOVAR_IN "$ANNOVAR_TOOL/humandb" -outfile "$OUT_FOLDER/$VCF_ID" -buildver hg19 -verdbsnp 135 -ver1000g 1000g2011may --remove
 
 END_TIME=$(date +%y.%m.%d\|%H:%M:%S)
 

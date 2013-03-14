@@ -1,0 +1,25 @@
+#!/bin/bash
+
+#Include option to specify outfolder?
+
+if [ $# -ne 1 ]; then
+	echo "This script converts all the Basecall (BCL) files from the Raw Run folder into FASTQ files."
+	echo "The FASTQ files are stored in the Project and Sample folders as defined by the SampleSheet from the Raw Run folder."
+	echo "---------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Raw Run Folder>" 
+	exit
+fi
+
+mkdir -p $HOME/logs/bcl2fastq/
+
+raw_folder=$(readlink -f $1)
+
+# Run BCL2FASTQ
+qsub -hard -l mem_limit=4G -N bcl2fastq.$(basename $1 | sed "s/\///g") $NGS_PIPE/helpers/bcl2fastq.sge $raw_folder
+
+#if [ $? -gt 0 ]
+#then
+#	echo "bcl2fastq.sge encountered an error. Exiting run.bcl2fastq.sge."
+#	echo "Check $HOME/logs/bcl2fastq/bcl2fastq.$(basename $1 | sed "s/\///g").o for details."
+#	exit 1
+#fi

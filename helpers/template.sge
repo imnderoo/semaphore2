@@ -1,0 +1,30 @@
+#!/bin/bash
+
+if [ $# -ne 2 ]; then
+        echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
+        echo "--------------------------------------------------------------------------------------------------------------------------"
+        echo "Usage: $(basename $0) <sampleid.bam> <segment1.bam> <segment2.bam> ... <segmentN.bam>"
+        exit
+fi
+
+#SGE Parameters:
+
+# Shell:
+#$ -S /bin/bash
+# Mail Conditions (b:begin, a:abort, e:end, s:suspend, n:no mail):
+#$ -m n
+# Define Mail Receiver:
+#$ -M sge_test
+# Define Output Log Location:
+#$ -o $HOME/logs/preprocess/gatk.recal/$JOB_NAME.o
+# Join STDERR and STDOUT. Otherwise, specify location of STDERR logs using -e <PATH> 
+#$ -j y
+
+wait $!
+
+if [ $? -gt 0 ]; 
+then
+	exit 1
+fi
+
+

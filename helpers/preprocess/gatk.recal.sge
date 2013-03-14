@@ -1,0 +1,60 @@
+#!/bin/bash
+
+if [ $# -ne 3 ]; then
+        echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
+        echo "--------------------------------------------------------------------------------------------------------------------------"
+        echo "Usage: $(basename $0) <infile *.raw.snps.vcf> <project> <sample>"
+        exit
+fi
+
+infile=$1
+project=$2
+sample=$3
+file_id="$project.$sample"
+
+#SGE Parameters:
+
+# Shell:
+#$ -S /bin/bash
+# Mail Conditions (b:begin, a:abort, e:end, s:suspend, n:no mail):
+#$ -m ae
+# Define Mail Receiver:
+#$ -M sge_test
+# Define Output Log Location:
+#$ -o $HOME/logs/preprocess/gatk.recal/$JOB_NAME.o
+# Join STDERR and STDOUT. 
+#$ -j y
+
+java -Xmx6g -jar $GATK_TOOL -T VariantRecalibrator \
+-R $REF \
+-input $infile \
+-resource:hapmap,known=false,training=true,truth=true,prior=15.0 $HAPMAP \
+-resource:omni,known=false,training=true,truth=false,prior=12.0 $OMNI \
+-resource:dbsnp,known=true,training=false,truth=false,prior=6.0 $DBSNP \
+-an QD -an HaplotypeScore -an MQRankSum \
+-an ReadPosRankSum -an FS -an MQ -an DP \
+-mode SNP \
+-recalFile $file_id.snps.recal \
+-tranchesFile $file_id.snps.tranches \
+-rscriptFile $file_id.snps.R
+
+wait $!
+
+if [ $? -gt 0 ]; 
+then
+	exit 1
+fi
+
+java -Xmx6g -jar $GATK_TOOL -T ApplyRecalibration \
+-R $REF -input $file_id.raw.snps.vcf \
+--ts_filter_level 99.0 -tranchesFile $file_id.snps.tranches \
+-recalFile $file_id.snps.recal \
+-mode SNP \
+-o $file_id.recal.filtered.snps.vcf
+
+wait $!
+
+if [ $? -gt 0 ]; 
+then
+        exit 1
+fi

@@ -14,7 +14,7 @@ out_log="$HOME/logs/watch.new.runs.o"
 echo "Monitoring $1 for RTAComplete.txt starting on $START_TIME" >> $out_log
 
 # Run inotifywait to monitor creation of "RTAComplete.txT" in the raw runs DIRECTORY
-while RES=$(/home/pipeline/usr/bin/bin/inotifywait -e create -q --format '%f' $RAW_RUN_FOLDER); do
+while RES=$(inotifywait -e create -q --format '%f' $RAW_RUN_FOLDER); do
 	
 	#echo "File/Directory Created"
 
@@ -24,8 +24,13 @@ while RES=$(/home/pipeline/usr/bin/bin/inotifywait -e create -q --format '%f' $R
 		rta_time=$(date +%y.%m.%d\|%H:%M:%S)
 
 		echo "RTA is completed for $RAW_RUN_FOLDER. Initated the preprocessing pipeline  on $rta_time" >> $out_log
-		$NGS_PIPE/python/addRunToDB.py $RAW_RUN_FOLDER
-		run.bcl2fastq $RAW_RUN_FOLDER 
+		# Need to fix addRunToDB by allowing samples to associate with multiple runs
+		run.bcl2fastq.sge $RAW_RUN_FOLDER
+		 
+		bcl_status=$?
+               
+		# $NGS_PIPE/python/addRunToDB.py $RAW_RUN_FOLDER $bcl_status  
+
 		break
 	fi 
 done

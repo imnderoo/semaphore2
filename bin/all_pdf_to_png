@@ -1,0 +1,23 @@
+#!/bin/sh
+#
+if [ $# -ne 1 ]; then
+	echo "This script searches all sub-directories and files within Input Folder and converts all pdf to png"
+	echo "--------------------------------------------------------------------------------------------------------------------------"
+	echo "Usage: $(basename $0) <Input Folder>"
+	exit
+fi
+
+if [ ! -d "$1" ]; then
+	echo "Error: InputFolder does not exist"
+	exit
+fi
+
+IN_FOLDER=$(readlink -f "$1")
+
+# Main Script
+# ===========
+for PDF in $(find $IN_FOLDER -name "*.pdf"); do
+	PDF_FULL=$(readlink -f $PDF)
+	convert -density 96 -quality 80 $PDF_FULL $(echo $PDF_FULL | sed 's/\.pdf$/\.png/')
+done
+

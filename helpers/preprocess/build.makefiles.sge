@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -ne 1 ]; then
         echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
@@ -12,10 +12,7 @@ if [ ! -d "$1" ]; then
         exit 1
 fi
 
-mkdir -p $HOME/logs/preprocess/
-mkdir -p $HOME/logs/errors/
-
-#$ -S /bin/sh
+#$ -S /bin/bash
 #$ -m ae
 #$ -M sge_test
 #$ -o $HOME/logs/preprocess/$JOB_NAME.o
@@ -26,4 +23,7 @@ SAMPLE_FOLDER=$(readlink -f "$1")
 #Build Make Files for each sample found in Project folder
 cd "$SAMPLE_FOLDER/"
 echo "Building Makefile for $SAMPLE_FOLDER..."
-qmake
+make
+
+#Convert all output pdf files to png
+all_pdf_to_png $SAMPLE_FOLDER

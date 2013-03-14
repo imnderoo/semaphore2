@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 if [ $# -ne 2 ]; then
         echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
@@ -7,10 +7,7 @@ if [ $# -ne 2 ]; then
         exit
 fi
 
-mkdir -p $HOME/logs/fastqc/
-mkdir -p $HOME/logs/errors/
-
-#$ -S /bin/sh
+#$ -S /bin/bash
 #$ -m ae
 #$ -M sge_test
 #$ -o $HOME/logs/fastqc/$JOB_NAME.o

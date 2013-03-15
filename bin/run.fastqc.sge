@@ -4,7 +4,7 @@ if [ $# -ne 1 ]; then
 	echo "This script runs FASTQC to produce QC reports on all the FASTQ files produced in a run (Finds all samples for all projects)"
 	echo "The FASTQC reports will be saved in the same folder as where the FASTQ files are located."
 	echo "--------------------------------------------------------------------------------------------------------------------------"
-	echo "Usage: $(basename $0) <Input Folder>"
+	echo "Usage: $(basename $0) <Input Folder (analysis/RUNID)>"
 	exit
 fi
 
@@ -23,14 +23,25 @@ mkdir -p $HOME/logs/errors/
 
 echo "Producing FASTQC reports for each FASTQ file found (recursively) in the Input folder"
 
-for FASTQ in $(find $IN_FOLDER | grep ".fastq.gz$"); do
+mkdir -p $outFolder
 
-	FASTQ_FILE=$(readlink -f $FASTQ)
-	OUT_FOLDER="$(dirname $FASTQ_FILE)/fastqc"
-	mkdir -p $OUT_FOLDER
-
-	fastq_id=$(basename $FASTQ | cut -d "_" -f 1,3-5 | cut -d "." -f 1) 
-
-	qsub -hard -l mem_limit=4G -N fastqc.$fastq_id $NGS_PIPE/helpers/fastqc.sge $FASTQ_FILE $OUT_FOLDER   
-
+for projectFolder in $(ls -d $IN_FOLDER/* | grep "Project_"); do
+	
+	for sampleFolder in $(ls -d $projectFolder/* | grep "Sample_"); do
+	
+		outFolder="$sampleFolder/fastqc"
+			
+		fastqList=""
+		fastq_id=$(basename $sampleFolder) 
+		
+		for fastqFile in $(ls -d $sampleFolder/* | grep "fastq.gz$"); do
+			fastqList="$fastqList $(readlink -f $fastqFile)"
+		done
+		
+		#echo " "
+		qsub -hard -l slots_limit=6 -l mem_limit=2G -N fastqc.$fastq_id $NGS_PIPE/helpers/fastqc.sge $outFolder $fastqList
+	
+		#$NGS_PIPE/helpers/fastqc.sge $outFolder $fastqList
+		
+	done
 done

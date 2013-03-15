@@ -1,9 +1,9 @@
 #!/bin/bash
 
-if [ $# -ne 2 ]; then
+if [ $# -lt 2 ]; then
         echo "This scripts iterate through all Samples/ in a Project/ and runs the Makefile (the preprocess pipeline)"
         echo "--------------------------------------------------------------------------------------------------------------------------"
-        echo "Usage: $(basename $0) <fastqc.gz file> <out directory>"
+        echo "Usage: $(basename $0) <out directory> <fastqc.gz files>"
         exit
 fi
 
@@ -13,11 +13,20 @@ fi
 #$ -o $HOME/logs/fastqc/$JOB_NAME.o
 #$ -e $HOME/logs/errors/$JOB_NAME.e
 
-fastq_file=$1
-out_folder=$2
+outDir=$1
+fileList=""
+
+for file in ${@:2}
+do
+	fileList="$fileList $file"
+done
+
+#echo "OutDir: $outDir"
+#echo "FileList: $fileList"
+#echo " "
 
 #/data1/download/FastQC/fastqc $fastq_file --outdir=$out_folder
-$FASTQC $fastq_file --outdir=$out_folder
+$FASTQC $fileList --outdir=$outDir -t 6 --casava
 
 PID_FASTQC=$!
 wait $PID_FASTQC
@@ -26,5 +35,3 @@ if [ $? -ne 0 ]; then
 	echo "FASTQC exited with error"
 	exit 1
 fi
-
-echo "FASTQC exited successfully"

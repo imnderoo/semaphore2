@@ -21,7 +21,7 @@ mkdir -p "$OUT_FOLDER"
 
 RAW_RUN_FOLDER=$(readlink -f "$1")
 BCL_FOLDER=$RAW_RUN_FOLDER/Data/Intensities/BaseCalls
-sample_sheet=$(ls $RAW_RUN_FOLDER/SampleSheet*.csv)
+sample_sheet=$(ls $RAW_RUN_FOLDER/SampleShee*.csv)
 
 # Fix up SampleSheet
 sed -i 's/ //g' $sample_sheet # Remove all spaces
@@ -30,7 +30,7 @@ sed -i 's/\,*$//g' $sample_sheet # Remove trailing commas
 #Main Script
 echo "Creating Makefiles to convert BCL into FASTQ files..."
 echo "$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $sample_sheet --force"
-$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $sample_sheet --force
+$BCL2FASTA_TOOL --input-dir $BCL_FOLDER --output-dir $OUT_FOLDER --sample-sheet $sample_sheet --force --use-bases-mask y*n,I6n,y*n
 
 echo "Building FASTQ files..."
 make -C $OUT_FOLDER

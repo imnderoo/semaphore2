@@ -26,7 +26,6 @@ def main():
 	avgPctGTQ30 = 0
 	avgMeanQScore = 0
 	numSamples = 0
-	getcontext().prec = 4
 
 	for row in secondTable.findAll('tr'):
 		rowContents = row.findAll('td')

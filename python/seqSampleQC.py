@@ -7,7 +7,6 @@ import fileinput
 import argparse
 import xml.etree.ElementTree as ET
 from bs4 import BeautifulSoup
-from decimal import *
 
 def main():
 
@@ -42,8 +41,8 @@ def main():
 		if (refSpecies != 'unknown'):
 			#print (laneNo, sampleID, refSpecies, project, sep=" ")
 			#print (yieldBases, pctGTQ30, meanQScore, sep=" ")
-			avgPctGTQ30 += Decimal(pctGTQ30) if '.' in pctGTQ30 else int(pctGTQ30)  
-			avgMeanQScore += Decimal(meanQScore) if '.' in meanQScore else int(meanQScore)     
+			avgPctGTQ30 += float(pctGTQ30) if '.' in pctGTQ30 else int(pctGTQ30)  
+			avgMeanQScore += float(meanQScore) if '.' in meanQScore else int(meanQScore)     
 			numSamples += 1
 		else:
 			avgPctGTQ30 /= numSamples

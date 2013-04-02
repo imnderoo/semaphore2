@@ -50,11 +50,13 @@ mv "$BAM_FILE.html" "$OUT_FILE_PREFIX.samstats.html"
 
 # The reheader code has been moved to start_snpcall_pipeline
 # Add header into BAM file to indicate the Pipeline Version number. Rebuild index for GATK Variant Calling
-$SAMTOOLS view -H $BAM_FILE | sed '$a@PG\tID:Pipeline\tVN:1.0\tCL:run_preprocess_pipeine' | samtools reheader - $BAM_FILE > "$BAM_ID.clean.dedup.recal.reheader.bam" 
+$SAMTOOLS view -H $BAM_FILE | sed '$a@PG\tID:Pipeline\tVN:'$PIPE_VERSION'\tCL:run_preprocess_pipeine' | samtools reheader - $BAM_FILE > "$BAM_ID.clean.dedup.recal.reheader.bam" 
 $SAMTOOLS index "$BAM_ID.clean.dedup.recal.reheader.bam"
+
 # Back up the original bam before new header
-mv "$BAM_FILE" "$BAM_FILE.bak"
-mv "$BAM_ID.clean.dedup.recal.bai" "$BAM_ID.clean.dedup.recal.bai.bak"
+#mv "$BAM_FILE" "$BAM_FILE.bak"
+#mv "$BAM_ID.clean.dedup.recal.bai" "$BAM_ID.clean.dedup.recal.bai.bak"
+
 mv "$BAM_ID.clean.dedup.recal.reheader.bam" "$BAM_FILE"
 mv "$BAM_ID.clean.dedup.recal.reheader.bam.bai" "$BAM_ID.clean.dedup.recal.bai"
  

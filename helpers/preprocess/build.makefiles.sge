@@ -26,4 +26,4 @@ echo "Building Makefile for $SAMPLE_FOLDER..."
 make
 
 #Convert all output pdf files to png
-all_pdf_to_png $SAMPLE_FOLDER
+$NGS_PIPE/helpers/all_pdf_to_png $SAMPLE_FOLDER

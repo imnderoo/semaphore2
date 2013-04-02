@@ -28,6 +28,11 @@ fi
 # ===========
 echo "Building *.bam files and recalibrating *.bam files for every Sample found in the Project folder"
 for SAMPLE_FOLDER in $(ls -d $PROJECT_FOLDER/Sample*); do 
-	# Need to define readgroup header here and then pass it in as a parameter
-	$NGS_PIPE/helpers/preprocess/bwa_bam_builder -d "$SAMPLE_FOLDER/" --reference "$REF" --project "$PROJECT_ID" > "$SAMPLE_FOLDER/Makefile"
+	if [ ! -f $SAMPLE_FOLDER/Makefile ]; 
+	then
+		# Need to define readgroup header here and then pass it in as a parameter
+		$NGS_PIPE/helpers/preprocess/bwa_bam_builder -d "$SAMPLE_FOLDER/" --reference "$REF" --project "$PROJECT_ID" > "$SAMPLE_FOLDER/Makefile"
+	else
+		echo "Makefile already exist... continuing with make."
+	fi
 done

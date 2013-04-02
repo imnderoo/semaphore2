@@ -29,7 +29,7 @@ def main():
 		runURL = args.runFolder.replace("/data2/", "http://172.31.104.12/")
 		createdTime = "20" + runName[0:2] + "-" + runName[2:4] + "-" + runName[4:6]
 		# status_id: 0-QC Required, 1-QC Passed, 2-QC Failed, 3-BCL2FASTQ Failed
-		sql = """INSERT INTO run (version, name, path, status_id, created) VALUES (0, '%s', '%s', %d, '%s')""" % (runName, runURL, runStatus, createdTime)
+		sql = """INSERT INTO run (version, name, status_id, created) VALUES (0, '%s', %d, '%s')""" % (runName, runStatus, createdTime)
 		execute_insert(conn, cursor, sql)
 	else:
 		sql = """UPDATE run SET status_id = %d WHERE name = '%s'""" % (runStatus, runName)

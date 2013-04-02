@@ -2,7 +2,7 @@
 # Scripts for converting .BED files to .interval_list files
 # BED files are used by the coverage scripts while .interval_list are used by auto-classification
 
-import os, time, sys
+import os
 import fileinput
 import argparse
 

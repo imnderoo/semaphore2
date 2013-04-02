@@ -39,7 +39,7 @@ for projectFolder in $(ls -d $IN_FOLDER/* | grep "Project_"); do
 		done
 		
 		#echo " "
-		qsub -hard -l slots_limit=6 -l mem_limit=2G -N fastqc.$fastq_id $NGS_PIPE/helpers/fastqc.sge $outFolder $fastqList
+		qsub -hard -l slots_limit=6 -l mem_limit=4G -N fastqc.$fastq_id $NGS_PIPE/helpers/fastqc.sge $outFolder $fastqList
 	
 		#$NGS_PIPE/helpers/fastqc.sge $outFolder $fastqList
 		

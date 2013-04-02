@@ -15,7 +15,7 @@ mkdir -p $HOME/logs/bcl2fastq/
 raw_folder=$(readlink -f $1)
 
 # Run BCL2FASTQ
-qsub -hard -l mem_limit=4G -N bcl2fastq.$(basename $1 | sed "s/\///g") $NGS_PIPE/helpers/bcl2fastq.sge $raw_folder
+qsub -hard -l slots_limit=2 -l mem_limit=8G -N bcl2fastq.$(basename $1 | sed "s/\///g") $NGS_PIPE/helpers/bcl2fastq.sge $raw_folder
 
 #if [ $? -gt 0 ]
 #then

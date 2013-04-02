@@ -25,7 +25,7 @@ file_id="$project.$sample"
 # Join STDERR and STDOUT. 
 #$ -j y
 
-java -Xmx6g -jar $GATK_TOOL -T VariantRecalibrator \
+java -Xmx8g -jar $GATK_TOOL -T VariantRecalibrator \
 -R $REF \
 -input $infile \
 -resource:hapmap,known=false,training=true,truth=true,prior=15.0 $HAPMAP \
@@ -45,7 +45,7 @@ then
 	exit 1
 fi
 
-java -Xmx6g -jar $GATK_TOOL -T ApplyRecalibration \
+java -Xmx8g -jar $GATK_TOOL -T ApplyRecalibration \
 -R $REF -input $file_id.raw.snps.vcf \
 --ts_filter_level 99.0 -tranchesFile $file_id.snps.tranches \
 -recalFile $file_id.snps.recal \

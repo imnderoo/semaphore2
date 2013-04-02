@@ -16,12 +16,12 @@ sample=$2
 #$ -o $HOME/logs/preprocess/gatk.process/$JOB_NAME.o
 #$ -j y
 
-java -Xmx6g -jar /data1/queue/Queue/Queue.jar \
+java -Xmx12g -jar /data1/queue/Queue/Queue.jar \
 -S /data1/queue/qscripts/DataProcessingPipeline.scala \
 -p $project -sg 0 -i $sample.sorted.bam -R $REF -D $DBSNP \
 -indels /data1/gatk_resources_1_5/1000G_phase1.indels.hg19.vcf.gz \
 -indels /data1/gatk_resources_1_5/Mills_and_1000G_gold_standard.indels.hg19.sites.vcf.gz \
--tempDir ./tmp  -startFromScratch \
+-tempDir ./tmp -startFromScratch \
 -jobReport $sample.jobreport -l INFO -run 
 
 wait $!

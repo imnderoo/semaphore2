@@ -16,7 +16,7 @@ outfile=$2
 #$ -o $HOME/logs/preprocess/gatk.genotyper/$JOB_NAME.o
 #$ -j y
 
-java -Xmx12g -jar $GATK_TOOL -T UnifiedGenotyper \
+java -Xmx16g -jar $GATK_TOOL -T UnifiedGenotyper \
 -nt 8 -dcov 200 \
 -glm SNP -R $REF \
 --dbsnp $DBSNP -l INFO \

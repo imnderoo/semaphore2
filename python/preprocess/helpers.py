@@ -66,28 +66,28 @@ def print_bwa_sge_command(pair, read_group, sample_name):
 	base_r2 = id_from_path(pair[1])
 	r1_id = base_r1.replace(".fast.gz", "")
 	print "\n{0}.bam: {0} {1}".format(base_r1, base_r2)
-	print "\tqsub -hard -l slots_limit=3 -l mem_limit=5G -cwd -N bwa.{3} $(NGS_PIPE)/helpers/preprocess/bwa.sge {1} {2} {0}".format(sample_name, base_r1, base_r2, r1_id)
+	print "\tqsub -hard -l slots_limit=5 -l mem_limit=10G -cwd -N bwa.{3} $(NGS_PIPE)/helpers/preprocess/bwa.sge {1} {2} {0}".format(sample_name, base_r1, base_r2, r1_id)
 	
 def print_merge_bams(files, sample_name):
-        files = map(lambda x: id_from_path(x) + ".bam", files)
-        print "\n%s.bam: %s" % (sample_name, " ".join(files))
+	files = map(lambda x: id_from_path(x) + ".bam", files)
+	print "\n%s.bam: %s" % (sample_name, " ".join(files))
 	print "\tqsub -hard -l mem_limit=128M -cwd -N sam.merge.{0} -sync y -hold_jid bwa.{0}* $(NGS_PIPE)/helpers/preprocess/sam.merge.sge {0}.bam {1}".format(sample_name, " ".join(files))
 
 def print_sort_bam(sample_name):
-        print "\n{0}.sorted.bam: {0}.bam".format(sample_name)
+	print "\n{0}.sorted.bam: {0}.bam".format(sample_name)
 	print "\tsamtools sort {0}.bam {0}.sorted".format(sample_name)
 
 def print_gatk_process(sample_name, project):
-        print "\n{0}.{1}.clean.dedup.recal.bam: {1}.sorted.bam".format(project, sample_name)
-	print "\tqsub -hard -l mem_limit=6G -cwd -N gatk.process.{1} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.process.sge {0} {1}".format(project, sample_name)
+	print "\n{0}.{1}.clean.dedup.recal.bam: {1}.sorted.bam".format(project, sample_name)
+	print "\tqsub -hard -l slots_limit=6 -l mem_limit=12G -cwd -N gatk.process.{1} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.process.sge {0} {1}".format(project, sample_name)
 
 def print_gatk_genotyper(sample_name, project):
 	print "\n{0}.{1}.raw.snps.vcf: {0}.{1}.clean.dedup.recal.bam".format(project, sample_name)
-	print "\tqsub -hard -l slots_limit=8 -l mem_limit=14G -cwd -N gatk.genotyper.{0} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.genotyper.sge $? $@".format(sample_name)
+	print "\tqsub -hard -l slots_limit=6 -l mem_limit=12G -cwd -N gatk.genotyper.{0} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.genotyper.sge $? $@".format(sample_name)
 
 def print_gatk_recalibrate(sample_name, project):
 	print "\n{0}.{1}.recal.filtered.snps.vcf: {0}.{1}.raw.snps.vcf".format(project, sample_name)
-	print "\tqsub -hard -l mem_limit=8G -cwd -N gatk.recal.{1} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.recal.sge $? {0} {1}".format(project, sample_name)
+	print "\tqsub -hard -l slots_limit=4 -l mem_limit=8G -cwd -N gatk.recal.{1} -sync y $(NGS_PIPE)/helpers/preprocess/gatk.recal.sge $? {0} {1}".format(project, sample_name)
 
 def print_r_recalibrate(sample_name, project):
 	print "\n {0}.{1}.snps.R.pdf {0}.{1}.snps.tranches.pdf: {0}.{1}.snps.R {0}.{1}.snps.tranches".format(project, sample_name)
